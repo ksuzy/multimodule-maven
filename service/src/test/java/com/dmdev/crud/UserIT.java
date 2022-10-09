@@ -1,61 +1,62 @@
 package com.dmdev.crud;
 
 import com.dmdev.entity.User;
-import com.dmdev.util.HibernateUtil;
+import com.dmdev.util.HibernateTestUtil;
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.Serializable;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static com.dmdev.util.HibernateTestUtil.sessionFactory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class UserIT {
 
-    private static User cUser;
-    private static User rudUser;
-    private static SessionFactory sessionFactory;
-    private static Session session;
-    private static Serializable idOfRud;
+    private User rudUser;
+    private Session session;
+
+    @BeforeAll
+    public static void initialization(){
+        sessionFactory = HibernateTestUtil.buildSessionFactory();
+    }
+
+    @AfterAll
+    public static void finish(){
+        sessionFactory.close();
+    }
 
     @BeforeEach
     public void prepareUserTable(){
-        sessionFactory = HibernateUtil.buildSessionFactory();
         session = sessionFactory.openSession();
-        cUser = HibernateUtil.createUserToInsert();
-        rudUser = HibernateUtil.createUserToReadUpdateDelete();
+        rudUser = HibernateTestUtil.createUserToReadUpdateDelete();
         session.beginTransaction();
-        session.createSQLQuery("delete from user_address").executeUpdate();
-        session.createSQLQuery("delete from user_details").executeUpdate();
-        session.createSQLQuery("delete from orders").executeUpdate();
-        session.createSQLQuery("delete from users").executeUpdate();
-        idOfRud = session.save(rudUser);
-        rudUser.setId((Integer) idOfRud);
+        session.save(rudUser);
         session.getTransaction().commit();
     }
 
     @Test
     public void createUserTest(){
-        session.beginTransaction();
-        Integer id = (Integer) session.save(cUser);
-        session.getTransaction().commit();
-        session.detach(cUser);
-        cUser.setId(id);
-        var actualUser = session.get(User.class, id);
-        session.detach(actualUser);
+        User cUser = HibernateTestUtil.createUserToInsert();
 
-        assertEquals(actualUser, cUser);
+        session.beginTransaction();
+        session.save(cUser);
+        session.getTransaction().commit();
+
+        assertNotNull(cUser.getId());
     }
 
     @Test
     public void readUserTest(){
         session.beginTransaction();
-        User actualUser = session.get(User.class, idOfRud);
+        session.evict(rudUser);
+        User actualUser = session.get(User.class, rudUser.getId());
+        session.getTransaction().commit();
 
-        assertEquals(actualUser, rudUser);
+        assertEquals(rudUser, actualUser);
     }
 
     @Test
@@ -63,22 +64,25 @@ class UserIT {
         session.beginTransaction();
         rudUser.setEmail("emailAlreadyUpdated");
         session.update(rudUser);
-        User actualUser = session.get(User.class, idOfRud);
+        session.flush();
+        session.evict(rudUser);
+        User actualUser = session.get(User.class, rudUser.getId());
 
-        assertEquals(actualUser, rudUser);
+        assertEquals(rudUser, actualUser);
     }
 
     @Test
     public void deleteAuthorTest(){
         session.beginTransaction();
         session.delete(rudUser);
-        Optional<User> actualAuthor = Optional.ofNullable(session.get(User.class, idOfRud));
-        assertTrue(actualAuthor.isEmpty());
+        User actualAuthor = session.get(User.class, rudUser.getId());
+        session.getTransaction().commit();
+
+        assertNull(actualAuthor);
     }
 
     @AfterEach
     public void closeSessions(){
         session.close();
-        sessionFactory.close();
     }
 }

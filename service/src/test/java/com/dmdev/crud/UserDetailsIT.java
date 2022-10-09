@@ -2,64 +2,70 @@ package com.dmdev.crud;
 
 import com.dmdev.entity.User;
 import com.dmdev.entity.UserDetails;
-import com.dmdev.util.HibernateUtil;
+import com.dmdev.util.HibernateTestUtil;
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import java.io.Serializable;
-import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static com.dmdev.util.HibernateTestUtil.sessionFactory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class UserDetailsIT {
 
-    private static UserDetails cUserDetails;
-    private static UserDetails rudUserDetails;
-    private static SessionFactory sessionFactory;
-    private static Session session;
-    private static Serializable userIdOfRud;
+    private User user;
+    private UserDetails rudUserDetails;
+    private Session session;
+
+    @BeforeAll
+    public static void initialization(){
+        sessionFactory = HibernateTestUtil.buildSessionFactory();
+    }
+
+    @AfterAll
+    public static void finish(){
+        sessionFactory.close();
+    }
 
     @BeforeEach
     public void prepareUserDetailsTable(){
-        sessionFactory = HibernateUtil.buildSessionFactory();
         session = sessionFactory.openSession();
-        User user = HibernateUtil.createUserToReadUpdateDelete();
-        User createUser = HibernateUtil.createUserToInsert();
+        user = HibernateTestUtil.createUserToReadUpdateDelete();
         session.beginTransaction();
-        session.createSQLQuery("delete from user_address").executeUpdate();
-        session.createSQLQuery("delete from user_details").executeUpdate();
-        session.createSQLQuery("delete from orders").executeUpdate();
-        session.createSQLQuery("delete from users").executeUpdate();
-        Integer userId = (Integer) session.save(user);
-        Integer createUserId = (Integer) session.save(createUser);
-        session.getTransaction().commit();
-        rudUserDetails = HibernateUtil.createUserDetails(userId);
-        cUserDetails = HibernateUtil.createUserDetails(createUserId);
-        session.beginTransaction();
-        userIdOfRud = session.save(rudUserDetails);
+        session.save(user);
+        rudUserDetails = HibernateTestUtil.createUserDetails();
+        user.addUserDetails(rudUserDetails);
         session.getTransaction().commit();
     }
 
     @Test
     public void createUserDetailsTest(){
+        User createUser = HibernateTestUtil.createUserToInsert();
         session.beginTransaction();
-        Integer userId = (Integer) session.save(cUserDetails);
+        session.save(createUser);
         session.getTransaction().commit();
-        session.detach(cUserDetails);
-        var actualUserDetails = session.get(UserDetails.class, userId);
-        session.detach(actualUserDetails);
+        UserDetails cUserDetails = HibernateTestUtil.createUserDetails();
+        createUser.setUserDetails(cUserDetails);
 
-        assertEquals(actualUserDetails, cUserDetails);
+        session.beginTransaction();
+        session.save(cUserDetails);
+        session.getTransaction().commit();
+
+        assertNotNull(cUserDetails.getId());
     }
 
     @Test
     public void readUserDetailsTest(){
         session.beginTransaction();
-        UserDetails actualUserDetails = session.get(UserDetails.class, userIdOfRud);
+        user.setUserDetails(null);
+        session.evict(rudUserDetails);
+        UserDetails actualUserDetails = session.get(UserDetails.class, rudUserDetails.getId());
 
-        assertEquals(actualUserDetails, rudUserDetails);
+        assertEquals(rudUserDetails, actualUserDetails);
     }
 
     @Test
@@ -67,22 +73,25 @@ class UserDetailsIT {
         session.beginTransaction();
         rudUserDetails.setPhone("+79111501823");
         session.update(rudUserDetails);
-        UserDetails actualUserDetails = session.get(UserDetails.class, userIdOfRud);
+        session.evict(rudUserDetails);
+        session.flush();
+        UserDetails actualUserDetails = session.get(UserDetails.class, rudUserDetails.getId());
 
-        assertEquals(actualUserDetails, rudUserDetails);
+        assertEquals(rudUserDetails, actualUserDetails);
     }
 
     @Test
     public void deleteUserDetailsTest(){
         session.beginTransaction();
+        user.setUserDetails(null);
         session.delete(rudUserDetails);
-        Optional<UserDetails> actualUserDetails = Optional.ofNullable(session.get(UserDetails.class, userIdOfRud));
-        assertTrue(actualUserDetails.isEmpty());
+        UserDetails actualUserDetails = session.get(UserDetails.class, rudUserDetails.getId());
+
+        assertNull(actualUserDetails);
     }
 
     @AfterEach
     public void closeSessions(){
         session.close();
-        sessionFactory.close();
     }
 }

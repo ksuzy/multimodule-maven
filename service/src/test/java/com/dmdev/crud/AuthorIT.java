@@ -1,55 +1,54 @@
 package com.dmdev.crud;
 
 import com.dmdev.entity.Author;
-import com.dmdev.util.HibernateUtil;
+import com.dmdev.util.HibernateTestUtil;
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import java.io.Serializable;
-import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static com.dmdev.util.HibernateTestUtil.sessionFactory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class AuthorIT {
 
-    private static Author cAuthor;
-    private static Author rudAuthor;
-    private static SessionFactory sessionFactory;
-    private static Session session;
-    private static Serializable idOfRud;
+    private Author rudAuthor;
+    private Session session;
+
+    @BeforeAll
+    public static void initialization(){
+        sessionFactory = HibernateTestUtil.buildSessionFactory();
+    }
 
     @BeforeEach
     public void prepareAuthorTable(){
-        sessionFactory = HibernateUtil.buildSessionFactory();
         session = sessionFactory.openSession();
-        cAuthor = HibernateUtil.createAuthorToInsert();
-        rudAuthor = HibernateUtil.createAuthorToReadUpdateDelete();
+        rudAuthor = HibernateTestUtil.createAuthorToReadUpdateDelete();
         session.beginTransaction();
-        session.createSQLQuery("delete from author").executeUpdate();
-        idOfRud = session.save(rudAuthor);
-        rudAuthor.setId((Integer) idOfRud);
+        session.save(rudAuthor);
         session.getTransaction().commit();
     }
 
     @Test
     public void createAuthorTest(){
-            session.beginTransaction();
-        Integer id = (Integer) session.save(cAuthor);
-            session.getTransaction().commit();
-            session.detach(cAuthor);
-            cAuthor.setId(id);
-            var actualAuthor = session.get(Author.class, id);
-            session.detach(actualAuthor);
+        Author cAuthor = HibernateTestUtil.createAuthorToInsert();
 
-            assertEquals(cAuthor, actualAuthor);
+        session.beginTransaction();
+        session.save(cAuthor);
+        session.getTransaction().commit();
+
+            assertNotNull(cAuthor.getId());
     }
 
     @Test
     public void readAuthorTest(){
         session.beginTransaction();
-        Author actualAuthor = session.get(Author.class, idOfRud);
+        session.evict(rudAuthor);
+        Author actualAuthor = session.get(Author.class, rudAuthor.getId());
+        session.getTransaction().commit();
 
         assertEquals(rudAuthor, actualAuthor);
     }
@@ -59,7 +58,10 @@ class AuthorIT {
         session.beginTransaction();
         rudAuthor.setFirstname("IvanAlreadyUpdated");
         session.update(rudAuthor);
-        Author actualAuthor = session.get(Author.class, idOfRud);
+        session.flush();
+        session.evict(rudAuthor);
+        Author actualAuthor = session.get(Author.class, rudAuthor.getId());
+        session.getTransaction().commit();
 
         assertEquals(rudAuthor, actualAuthor);
     }
@@ -68,13 +70,14 @@ class AuthorIT {
     public void deleteAuthorTest(){
         session.beginTransaction();
         session.delete(rudAuthor);
-        Optional<Author> actualAuthor = Optional.ofNullable(session.get(Author.class, idOfRud));
-        assertTrue(actualAuthor.isEmpty());
+        Author actualAuthor = session.get(Author.class, rudAuthor.getId());
+        session.getTransaction().commit();
+
+        assertNull(actualAuthor);
     }
 
     @AfterEach
     public void closeSessions(){
         session.close();
-        sessionFactory.close();
     }
 }

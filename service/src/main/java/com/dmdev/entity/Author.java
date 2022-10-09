@@ -1,14 +1,27 @@
 package com.dmdev.entity;
 
-import lombok.*;
-import javax.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.ManyToMany;
 import java.time.LocalDate;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(exclude = "books")
+@ToString(exclude = "books")
 @Entity
 public class Author {
 
@@ -20,16 +33,7 @@ public class Author {
     private String patronymic;
     private LocalDate birthday;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Author author = (Author) o;
-        return Objects.equals(id, author.id) && Objects.equals(firstname, author.firstname) && Objects.equals(lastname, author.lastname) && Objects.equals(patronymic, author.patronymic) && Objects.equals(birthday, author.birthday);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, firstname, lastname, patronymic, birthday);
-    }
+    @Builder.Default
+    @ManyToMany(mappedBy = "authors", cascade = CascadeType.REMOVE)
+    private List<Book> books = new ArrayList<>();
 }

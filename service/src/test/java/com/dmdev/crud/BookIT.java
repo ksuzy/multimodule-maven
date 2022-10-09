@@ -1,83 +1,98 @@
 package com.dmdev.crud;
 
+import com.dmdev.entity.Author;
 import com.dmdev.entity.Book;
-import com.dmdev.util.HibernateUtil;
+import com.dmdev.util.HibernateTestUtil;
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.Serializable;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static com.dmdev.util.HibernateTestUtil.sessionFactory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class BookIT {
+    private Author author;
+    private Book book;
+    private Session session;
 
-    private static Book cBook;
-    private static Book rudBook;
+    @BeforeAll
+    public static void initialization(){
+        sessionFactory = HibernateTestUtil.buildSessionFactory();
+    }
 
-    private static SessionFactory sessionFactory;
-    private static Session session;
-    private static Serializable idOfRud;
+    @AfterAll
+    public static void finish(){
+        sessionFactory.close();
+    }
 
     @BeforeEach
     public void prepareBookTable(){
-        sessionFactory = HibernateUtil.buildSessionFactory();
         session = sessionFactory.openSession();
-        cBook = HibernateUtil.createBookToInsert();
-        rudBook = HibernateUtil.createBookToReadUpdateDelete();
+        author = HibernateTestUtil.createAuthorToReadUpdateDelete();
+        book = HibernateTestUtil.createBook(author);
         session.beginTransaction();
-        session.createSQLQuery("delete from orders").executeUpdate();
-        session.createSQLQuery("delete from book").executeUpdate();
-        idOfRud = session.save(rudBook);
-        rudBook.setId((Long) idOfRud);
+        session.save(author);
+        session.save(book);
         session.getTransaction().commit();
     }
 
     @Test
     public void createBookTest(){
-        session.beginTransaction();
-        Long id = (Long) session.save(cBook);
-        session.getTransaction().commit();
-        session.detach(cBook);
-        cBook.setId(id);
-        var actualBook = session.get(Book.class, id);
-        session.detach(actualBook);
+        Author author = HibernateTestUtil.createAuthorToInsert();
+        Book book = HibernateTestUtil.createBook(author);
 
-        assertEquals(cBook, actualBook);
+        session.beginTransaction();
+        session.save(author);
+        session.save(book);
+        session.getTransaction().commit();
+
+        assertNotNull(book.getId());
     }
 
     @Test
     public void readBookTest(){
         session.beginTransaction();
-        Book actualBook = session.get(Book.class, idOfRud);
+        book.getAuthors().forEach(author -> {
+            author.getBooks().remove(book);
+        });
+        session.evict(book);
+        Book actualBook = session.get(Book.class, book.getId());
+        session.getTransaction().commit();
 
-        assertEquals(rudBook, actualBook);
+        assertEquals(book, actualBook);
     }
 
     @Test
     public void updateBookTest(){
         session.beginTransaction();
-        rudBook.setName("bookAlreadyUpdated");
-        session.update(rudBook);
-        Book actualBook = session.get(Book.class, idOfRud);
+        book.setName("bookAlreadyUpdated");
+        session.update(book);
+        session.flush();
+        session.evict(book);
+        session.flush();
+        Book actualBook = session.get(Book.class, book.getId());
 
-        assertEquals(rudBook, actualBook);
+        assertEquals(book, actualBook);
     }
 
     @Test
     public void deleteAuthorTest(){
+        author.getBooks().remove(book);
         session.beginTransaction();
-        session.delete(rudBook);
-        Optional<Book> actualBook = Optional.ofNullable(session.get(Book.class, idOfRud));
-        assertTrue(actualBook.isEmpty());
+        session.delete(book);
+        Book actualBook = session.get(Book.class, book.getId());
+        session.getTransaction().commit();
+
+        assertNull(actualBook);
     }
 
     @AfterEach
     public void closeSessions(){
         session.close();
-        sessionFactory.close();
     }
 }

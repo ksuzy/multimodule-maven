@@ -2,89 +2,96 @@ package com.dmdev.crud;
 
 import com.dmdev.entity.Order;
 import com.dmdev.entity.User;
-import com.dmdev.util.HibernateUtil;
+import com.dmdev.entity.fields.Status;
+import com.dmdev.util.HibernateTestUtil;
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.Serializable;
-import java.math.BigDecimal;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static com.dmdev.util.HibernateTestUtil.sessionFactory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class OrderIT {
 
-    private static Order cOrder;
-    private static Order rudOrder;
-    private static SessionFactory sessionFactory;
-    private static Session session;
-    private static Serializable idOfRud;
+    private User user;
+    private Order rudOrder;
+    private Session session;
+
+    @BeforeAll
+    public static void initialization(){
+        sessionFactory = HibernateTestUtil.buildSessionFactory();
+    }
+
+    @AfterAll
+    public static void finish(){
+        sessionFactory.close();
+    }
 
     @BeforeEach
     public void prepareOrderTable(){
-        sessionFactory = HibernateUtil.buildSessionFactory();
         session = sessionFactory.openSession();
-        User user = HibernateUtil.createUserToInsert();
+        user = HibernateTestUtil.createUserToReadUpdateDelete();
+        rudOrder = HibernateTestUtil.createOrder();
+        user.addOrder(rudOrder);
         session.beginTransaction();
-        session.createSQLQuery("delete from user_address").executeUpdate();
-        session.createSQLQuery("delete from user_details").executeUpdate();
-        session.createSQLQuery("delete from orders").executeUpdate();
-        session.createSQLQuery("delete from users").executeUpdate();
-        Integer clientId = (Integer) session.save(user);
-        session.getTransaction().commit();
-        cOrder = HibernateUtil.createOrder(clientId);
-        rudOrder = HibernateUtil.createOrder(clientId);
-        session.beginTransaction();
-        idOfRud = session.save(rudOrder);
-        rudOrder.setId((Long) idOfRud);
+        session.save(user);
+        session.save(rudOrder);
         session.getTransaction().commit();
     }
 
     @Test
     public void createOrderTest(){
-        session.beginTransaction();
-        Long id = (Long) session.save(cOrder);
-        session.getTransaction().commit();
-        session.detach(cOrder);
-        cOrder.setId(id);
-        var actualOrder = session.get(Order.class, id);
-        session.detach(actualOrder);
+        Order order = HibernateTestUtil.createOrder();
+        user.addOrder(order);
 
-        assertEquals(actualOrder, cOrder);
+        session.beginTransaction();
+        session.save(order);
+        session.getTransaction().commit();
+
+        assertNotNull(order.getId());
     }
 
     @Test
     public void readOrderTest(){
         session.beginTransaction();
-        Order actualOrder = session.get(Order.class, idOfRud);
+        session.evict(rudOrder);
+        session.flush();
+        Order actualOrder = session.get(Order.class, rudOrder.getId());
+        session.getTransaction().commit();
 
-        assertEquals(actualOrder, rudOrder);
+        assertEquals(rudOrder, actualOrder);
     }
 
     @Test
     public void updateOrderTest(){
         session.beginTransaction();
-        rudOrder.setPrice(BigDecimal.valueOf(200.14));
+        rudOrder.setStatus(Status.CLOSED);
         session.update(rudOrder);
-        Order actualOrder = session.get(Order.class, idOfRud);
+        session.evict(rudOrder);
+        session.flush();
+        Order actualOrder = session.get(Order.class, rudOrder.getId());
 
-        assertEquals(actualOrder, rudOrder);
+        assertEquals(rudOrder, actualOrder);
     }
 
     @Test
     public void deleteAuthorTest(){
         session.beginTransaction();
-        session.delete(rudOrder);
-        Optional<Order> actualOrder = Optional.ofNullable(session.get(Order.class, idOfRud));
-        assertTrue(actualOrder.isEmpty());
+        user.getOrders().remove(rudOrder);
+        session.flush();
+        Order actualOrder = session.get(Order.class, rudOrder.getId());
+        session.getTransaction().commit();
+
+        assertNull(actualOrder);
     }
 
     @AfterEach
     public void closeSessions(){
         session.close();
-        sessionFactory.close();
     }
 }

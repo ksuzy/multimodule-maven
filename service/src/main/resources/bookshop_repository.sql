@@ -8,8 +8,6 @@ CREATE TABLE author
     UNIQUE (firstname, lastname, patronymic, birthday)
 );
 
-DROP TABLE author CASCADE;
-
 CREATE TABLE book
 (
     id          BIGSERIAL PRIMARY KEY,
@@ -20,79 +18,63 @@ CREATE TABLE book
     issue_year  SMALLINT     NOT NULL
 );
 
-DROP TABLE book CASCADE;
-
-CREATE TABLE author_book
+create TABLE book_author
 (
-    author_id INT    NOT NULL REFERENCES author (id),
-    book_id   BIGINT NOT NULL REFERENCES book (id)
+    author_id INT    NOT NULL REFERENCES author (id) ON delete CASCADE,
+    book_id   BIGINT NOT NULL REFERENCES book (id) ON delete CASCADE,
+    PRIMARY KEY (book_id, author_id)
 );
 
-DROP TABLE author_book CASCADE;
-
-CREATE TYPE status AS ENUM ('OPEN', 'CLOSED', 'PAYED', 'INPROCESS',
-    'WAITINGFORPAYMENT', 'SENT', 'REJECTED', 'CANCELED');
-DROP TYPE status;
-
-CREATE TABLE users
+create TABLE users
 (
     id       SERIAL PRIMARY KEY,
     email    VARCHAR(128) NOT NULL UNIQUE,
     password VARCHAR(128) NOT NULL,
-    is_admin BOOLEAN      NOT NULL
+    role     VARCHAR(32)  NOT NULL
 );
 
-
-DROP TABLE users CASCADE;
-
-CREATE TABLE user_details
+create TABLE user_details
 (
-    user_id    INT PRIMARY KEY REFERENCES users (id),
+    id         SERIAL PRIMARY KEY,
+    user_id    INT UNIQUE   NOT NULL REFERENCES users (id),
     firstname  VARCHAR(128) NOT NULL,
     lastname   VARCHAR(128) NOT NULL,
     patronymic VARCHAR(128),
     phone      VARCHAR(32)
 );
 
-DROP TABLE user_details CASCADE;
-
-CREATE TABLE user_address
+create TABLE user_address
 (
-    user_id           INT PRIMARY KEY REFERENCES user_details (user_id),
+    user_id           INT PRIMARY KEY REFERENCES users (id),
     region            VARCHAR(128) NOT NULL,
     district          VARCHAR(128) NOT NULL,
     population_center VARCHAR(128) NOT NULL,
     street            VARCHAR(128) NOT NULL,
     house             VARCHAR(128) NOT NULL,
     is_private        BOOLEAN,
-    front_door        VARCHAR(128),
-    floor             VARCHAR(3),
-    flat              VARCHAR(5)
+    front_door        INT,
+    floor             INT,
+    flat              INT
 );
 
-DROP TABLE user_address CASCADE;
-
-CREATE TABLE orders
+create TABLE orders
 (
     id         BIGSERIAL PRIMARY KEY,
-    created_at TIMESTAMP   NOT NULL,
+    created_at TIMESTAMP UNIQUE NOT NULL,
     end_at     TIMESTAMP,
-    status     VARCHAR(50) NOT NULL,
-    price      NUMERIC     NOT NULL,
-    client_id  INT REFERENCES users (id)
+    status     VARCHAR(50)      NOT NULL,
+    price      NUMERIC          NOT NULL,
+    client_id  INT              NOT NULL REFERENCES users (id) ON delete CASCADE
 );
 
-DROP TABLE orders CASCADE;
-
-CREATE TABLE order_product
+create TABLE order_product
 (
-    order_id    INT REFERENCES orders (id),
-    book_id     BIGINT REFERENCES book (id),
+    id          BIGSERIAL PRIMARY KEY,
+    order_id    BIGINT  NOT NULL REFERENCES orders (id),
+    book_id     BIGINT  NOT NULL REFERENCES book (id),
     quantity    INT     NOT NULL,
     total_price NUMERIC NOT NULL
 );
-
-DROP TABLE order_product CASCADE;
 
 
 
