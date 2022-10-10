@@ -46,7 +46,7 @@ public class User {
     @Builder.Default
     private List<Order> orders = new ArrayList<>();
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private UserAddress userAddress;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
@@ -65,5 +65,9 @@ public class User {
     public void addOrder(Order order) {
         orders.add(order);
         order.setUser(this);
+    }
+
+    public String fullName() {
+        return  this.userDetails.getFirstname() + " " + this.userDetails.getLastname();
     }
 }
