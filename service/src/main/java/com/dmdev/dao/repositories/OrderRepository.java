@@ -20,7 +20,7 @@ public class OrderRepository extends BaseRepository<Long, Order> {
         super(QOrder.order, Order.class, entityManager);
     }
 
-    public List<Order> findAllByUser(User user){
+    public List<Order> findAllByUser(User user) {
         EntityManager entityManager = getEntityManager();
 
         Predicate predicate = QPredicate.builder()
@@ -34,16 +34,16 @@ public class OrderRepository extends BaseRepository<Long, Order> {
                 .fetch();
     }
 
-    public void updateStatusById(Long id, Status status){
+    public void updateStatusById(Long id, Status status) {
         Optional<Order> maybeOrder = findById(id);
-        if(maybeOrder.isEmpty()){
+        if (maybeOrder.isEmpty()) {
             throw new RuntimeException();
         }
         maybeOrder.get().setStatus(status);
         update(maybeOrder.get());
     }
 
-    public void deleteOrdersMadeEarlierDate(LocalDateTime date){
+    public void deleteOrdersMadeEarlierDate(LocalDateTime date) {
         EntityManager entityManager = getEntityManager();
         JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
 

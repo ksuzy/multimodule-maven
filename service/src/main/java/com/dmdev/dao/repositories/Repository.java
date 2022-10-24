@@ -13,7 +13,7 @@ public interface Repository<K extends Serializable, E extends BaseEntity<K>> {
 
     default void deleteById(K id) {
         Optional<E> maybeEntity = findById(id);
-        if (maybeEntity.isPresent()){
+        if (maybeEntity.isPresent()) {
             delete(maybeEntity.get());
         } else {
             throw new RuntimeException();

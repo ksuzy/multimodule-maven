@@ -32,18 +32,18 @@ class UserAddressIT {
     private static List<BaseEntity> data;
 
     @BeforeAll
-    public static void initialization(){
+    public static void initialization() {
         sessionFactory = HibernateTestUtil.buildSessionFactory();
         data = TestDataImporter.importData(sessionFactory);
     }
 
     @AfterAll
-    public static void finish(){
+    public static void finish() {
         sessionFactory.close();
     }
 
     @BeforeEach
-    public void prepareUserAddressTable(){
+    public void prepareUserAddressTable() {
         session = sessionFactory.getCurrentSession();
         repository = new UserAddressRepository(session);
         user = HibernateTestUtil.createUserToReadUpdateDelete();
@@ -52,10 +52,11 @@ class UserAddressIT {
         rudUserAddress = HibernateTestUtil.createUserAddress();
         user.addUserAddress(rudUserAddress);
         session.save(rudUserAddress);
-        session.flush();    }
+        session.flush();
+    }
 
     @Test
-    public void createUserAddressTest(){
+    public void createUserAddressTest() {
         User createUser = HibernateTestUtil.createUserToInsert();
 
         session.save(createUser);
@@ -72,7 +73,7 @@ class UserAddressIT {
     }
 
     @Test
-    public void readUserAddressTest(){
+    public void readUserAddressTest() {
         session.evict(rudUserAddress);
         Optional<UserAddress> actualUserAddress = repository.findById(rudUserAddress.getId());
 
@@ -81,7 +82,7 @@ class UserAddressIT {
     }
 
     @Test
-    public void updateUserAddressTest(){
+    public void updateUserAddressTest() {
         rudUserAddress.setRegion("Guadeloupe");
         repository.update(rudUserAddress);
         session.flush();
@@ -92,7 +93,7 @@ class UserAddressIT {
     }
 
     @Test
-    public void deleteUserAddressTest(){
+    public void deleteUserAddressTest() {
         user.setUserAddress(null);
         repository.delete(rudUserAddress);
         UserAddress actualUserAddress = session.get(UserAddress.class, rudUserAddress.getId());
@@ -101,7 +102,7 @@ class UserAddressIT {
     }
 
     @Test
-    void findAllTest(){
+    void findAllTest() {
         List<UserAddress> results = repository.findAll();
         assertThat(results).hasSize(4);
 
@@ -110,7 +111,7 @@ class UserAddressIT {
     }
 
     @AfterEach
-    void closeSessions(){
+    void closeSessions() {
         session.getTransaction().rollback();
     }
 }

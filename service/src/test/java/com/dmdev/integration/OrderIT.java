@@ -36,18 +36,18 @@ class OrderIT {
     private static List<BaseEntity> data;
 
     @BeforeAll
-    public static void initialization(){
+    public static void initialization() {
         sessionFactory = HibernateTestUtil.buildSessionFactory();
         data = TestDataImporter.importData(sessionFactory);
     }
 
     @AfterAll
-    public static void finish(){
+    public static void finish() {
         sessionFactory.close();
     }
 
     @BeforeEach
-    public void prepareOrderTable(){
+    public void prepareOrderTable() {
         session = sessionFactory.getCurrentSession();
         repository = new OrderRepository(session);
         user = HibernateTestUtil.createUserToReadUpdateDelete();
@@ -60,7 +60,7 @@ class OrderIT {
     }
 
     @Test
-    public void createOrderTest(){
+    public void createOrderTest() {
         Order order = HibernateTestUtil.createOrder();
         user.addOrder(order);
 
@@ -70,7 +70,7 @@ class OrderIT {
     }
 
     @Test
-    public void readOrderTest(){
+    public void readOrderTest() {
         session.evict(rudOrder);
         Optional<Order> maybeOrder = repository.findById(rudOrder.getId());
 
@@ -79,7 +79,7 @@ class OrderIT {
     }
 
     @Test
-    public void updateOrderTest(){
+    public void updateOrderTest() {
         rudOrder.setStatus(Status.CLOSED);
         repository.update(rudOrder);
         session.evict(rudOrder);
@@ -89,7 +89,7 @@ class OrderIT {
     }
 
     @Test
-    public void deleteOrderTest(){
+    public void deleteOrderTest() {
         user.getOrders().remove(rudOrder);
         repository.delete(rudOrder);
         Order actualOrder = session.get(Order.class, rudOrder.getId());
@@ -129,7 +129,7 @@ class OrderIT {
     }
 
     @Test
-    void deleteOrdersMadeEarlierDateTest(){
+    void deleteOrdersMadeEarlierDateTest() {
         List<BaseEntity> expectedOrders = data.stream()
                 .filter(Order.class::isInstance)
                 .toList();

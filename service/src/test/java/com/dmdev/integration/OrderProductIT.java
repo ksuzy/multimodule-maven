@@ -36,14 +36,15 @@ public class OrderProductIT {
     private Session session;
     private OrderProductRepository repository;
     private static List<BaseEntity> data;
+
     @BeforeAll
-    public static void initialization(){
+    public static void initialization() {
         sessionFactory = HibernateTestUtil.buildSessionFactory();
         data = TestDataImporter.importData(sessionFactory);
     }
 
     @AfterAll
-    public static void finish(){
+    public static void finish() {
         sessionFactory.close();
     }
 
@@ -110,7 +111,7 @@ public class OrderProductIT {
     }
 
     @Test
-    void findAllTest(){
+    void findAllTest() {
         List<OrderProduct> results = repository.findAll();
         assertThat(results).hasSize(12);
 
@@ -119,7 +120,7 @@ public class OrderProductIT {
     }
 
     @Test
-    void deleteAllByOrders(){
+    void deleteAllByOrders() {
         List<Order> orders = data.stream()
                 .filter(Order.class::isInstance)
                 .map(Order.class::cast)

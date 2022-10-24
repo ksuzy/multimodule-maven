@@ -32,18 +32,18 @@ class UserIT {
     private static List<BaseEntity> data;
 
     @BeforeAll
-    public static void initialization(){
+    public static void initialization() {
         sessionFactory = HibernateTestUtil.buildSessionFactory();
         data = TestDataImporter.importData(sessionFactory);
     }
 
     @AfterAll
-    public static void finish(){
+    public static void finish() {
         sessionFactory.close();
     }
 
     @BeforeEach
-    public void prepareUserTable(){
+    public void prepareUserTable() {
         session = sessionFactory.getCurrentSession();
         repository = new UserRepository(session);
         rudUser = HibernateTestUtil.createUserToReadUpdateDelete();
@@ -54,7 +54,7 @@ class UserIT {
     }
 
     @Test
-    public void createUserTest(){
+    public void createUserTest() {
         User cUser = HibernateTestUtil.createUserToInsert();
 
         repository.save(cUser);
@@ -63,7 +63,7 @@ class UserIT {
     }
 
     @Test
-    public void readUserTest(){
+    public void readUserTest() {
         session.evict(rudUser);
         Optional<User> maybeUser = repository.findById(rudUser.getId());
 
@@ -72,7 +72,7 @@ class UserIT {
     }
 
     @Test
-    public void updateUserTest(){
+    public void updateUserTest() {
         rudUser.setEmail("emailAlreadyUpdated");
         repository.update(rudUser);
         session.flush();
@@ -83,7 +83,7 @@ class UserIT {
     }
 
     @Test
-    public void deleteUserTest(){
+    public void deleteUserTest() {
         repository.delete(rudUser);
 
         User maybeUser = session.get(User.class, rudUser.getId());
@@ -91,7 +91,7 @@ class UserIT {
     }
 
     @Test
-    void findAllTest(){
+    void findAllTest() {
         List<User> results = repository.findAll();
         assertThat(results).hasSize(4);
 
@@ -100,7 +100,7 @@ class UserIT {
     }
 
     @Test
-    void findAllWithGraphsTest(){
+    void findAllWithGraphsTest() {
         List<User> results = repository.findAllWithGraphs();
         assertThat(results).hasSize(4);
 
@@ -122,7 +122,7 @@ class UserIT {
     }
 
     @AfterEach
-    void rollbackTransaction(){
+    void rollbackTransaction() {
         session.getTransaction().rollback();
     }
 }

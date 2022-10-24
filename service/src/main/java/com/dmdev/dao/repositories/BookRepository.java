@@ -1,4 +1,5 @@
 package com.dmdev.dao.repositories;
+
 import com.dmdev.dao.predicates.QPredicate;
 import com.dmdev.entity.Author;
 import com.dmdev.entity.Book;
@@ -15,7 +16,7 @@ public class BookRepository extends BaseRepository<Long, Book> {
         super(QBook.book, Book.class, entityManager);
     }
 
-    public List<Book> findAllByAuthor(Author author){
+    public List<Book> findAllByAuthor(Author author) {
         EntityManager entityManager = getEntityManager();
 
         Predicate predicate = QPredicate.builder()
@@ -29,7 +30,7 @@ public class BookRepository extends BaseRepository<Long, Book> {
                 .fetch();
     }
 
-    public List<Book> findAllByIssueYear(Short issueYear){
+    public List<Book> findAllByIssueYear(Short issueYear) {
         EntityManager entityManager = getEntityManager();
 
         Predicate predicate = QPredicate.builder()

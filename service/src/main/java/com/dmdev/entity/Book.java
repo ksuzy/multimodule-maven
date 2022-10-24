@@ -51,7 +51,7 @@ public class Book implements BaseEntity<Long> {
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL)
     private List<OrderProduct> orderProducts = new ArrayList<>();
 
-    public void addAuthor(Author author){
+    public void addAuthor(Author author) {
         authors.add(author);
         author.getBooks().add(this);
     }

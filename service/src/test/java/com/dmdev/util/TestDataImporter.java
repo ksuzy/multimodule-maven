@@ -36,7 +36,7 @@ public class TestDataImporter {
         Author author6 = saveAuthor(session, "Дейл", "Карнеги");
         session.flush();
 
-        result.add(author );
+        result.add(author);
         result.add(author1);
         result.add(author2);
         result.add(author3);
@@ -55,7 +55,7 @@ public class TestDataImporter {
         Book book8 = saveBook(session, "Как перестать беспокоиться и начать жить", (short) 1948, BigDecimal.valueOf(368.00), List.of(author6));
         Book book9 = saveBook(session, "Как завоевывать друзей и оказывать влияние на людей", (short) 1936, BigDecimal.valueOf(352.00), List.of(author6));
 
-        result.add(book );
+        result.add(book);
         result.add(book1);
         result.add(book2);
         result.add(book3);
@@ -88,7 +88,7 @@ public class TestDataImporter {
         Order order2 = saveOrder(session, billGates);
         Order order3 = saveOrder(session, sergeyBrin);
 
-        result.add(order );
+        result.add(order);
         result.add(order1);
         result.add(order2);
         result.add(order3);
@@ -147,7 +147,7 @@ public class TestDataImporter {
     private Book saveBook(Session session, String name, short issueYear, BigDecimal price, List<Author> authors) {
         Book book = HibernateTestUtil.createBook(name, issueYear, price, authors);
         session.save(book);
-        return  book;
+        return book;
     }
 
     private User saveUserAndUserAddress(Session session,

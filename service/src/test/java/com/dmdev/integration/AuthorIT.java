@@ -29,14 +29,15 @@ class AuthorIT {
     private Session session;
     private AuthorRepository repository;
     private static List<BaseEntity> data;
+
     @BeforeAll
-    public static void initialization(){
+    public static void initialization() {
         sessionFactory = HibernateTestUtil.buildSessionFactory();
         data = TestDataImporter.importData(sessionFactory);
     }
 
     @BeforeEach
-    public void prepareAuthorTable(){
+    public void prepareAuthorTable() {
         session = sessionFactory.openSession();
         repository = new AuthorRepository(session);
         rudAuthor = HibernateTestUtil.createAuthorToReadUpdateDelete();
@@ -56,16 +57,16 @@ class AuthorIT {
     }
 
     @Test
-    public void createAuthorTest(){
+    public void createAuthorTest() {
         Author cAuthor = HibernateTestUtil.createAuthorToInsert();
 
         repository.save(cAuthor);
 
-            assertNotNull(cAuthor.getId());
+        assertNotNull(cAuthor.getId());
     }
 
     @Test
-    public void readAuthorTest(){
+    public void readAuthorTest() {
         session.evict(rudAuthor);
         Optional<Author> maybeAuthor = repository.findById(rudAuthor.getId());
 
@@ -74,7 +75,7 @@ class AuthorIT {
     }
 
     @Test
-    public void updateAuthorTest(){
+    public void updateAuthorTest() {
         rudAuthor.setFirstname("IvanAlreadyUpdated");
         repository.update(rudAuthor);
         session.flush();
@@ -85,7 +86,7 @@ class AuthorIT {
     }
 
     @Test
-    public void deleteAuthorTest(){
+    public void deleteAuthorTest() {
         repository.delete(rudAuthor);
 
         Author actualAuthor = session.get(Author.class, rudAuthor.getId());

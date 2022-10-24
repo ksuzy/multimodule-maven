@@ -16,7 +16,7 @@ import java.util.Optional;
 
 @Getter
 @RequiredArgsConstructor
-public abstract class BaseRepository<K extends Serializable, E extends BaseEntity<K>> implements Repository<K, E>{
+public abstract class BaseRepository<K extends Serializable, E extends BaseEntity<K>> implements Repository<K, E> {
 
     private final EntityPath<E> qClazz;
     private final Class<E> clazz;

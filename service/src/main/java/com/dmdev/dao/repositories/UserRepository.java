@@ -12,13 +12,13 @@ import javax.persistence.EntityManager;
 import java.util.List;
 
 
-public class UserRepository extends BaseRepository<Integer, User>{
+public class UserRepository extends BaseRepository<Integer, User> {
 
     public UserRepository(EntityManager entityManager) {
         super(QUser.user, User.class, entityManager);
     }
 
-    public List<User> findAllWithGraphs(){
+    public List<User> findAllWithGraphs() {
         var graph = getEntityManager().createEntityGraph(User.class);
         graph.addAttributeNodes("userDetails", "userAddress");
 

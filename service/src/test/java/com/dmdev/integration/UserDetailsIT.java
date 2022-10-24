@@ -33,18 +33,18 @@ class UserDetailsIT {
     private static List<BaseEntity> data;
 
     @BeforeAll
-    public static void initialization(){
+    public static void initialization() {
         sessionFactory = HibernateTestUtil.buildSessionFactory();
         data = TestDataImporter.importData(sessionFactory);
     }
 
     @AfterAll
-    public static void finish(){
+    public static void finish() {
         sessionFactory.close();
     }
 
     @BeforeEach
-    public void prepareUserDetailsTable(){
+    public void prepareUserDetailsTable() {
         session = sessionFactory.getCurrentSession();
         repository = new UserDetailsRepository(session);
         user = HibernateTestUtil.createUserToReadUpdateDelete();
@@ -57,7 +57,7 @@ class UserDetailsIT {
     }
 
     @Test
-    public void createUserDetailsTest(){
+    public void createUserDetailsTest() {
         User createUser = HibernateTestUtil.createUserToInsert();
         session.save(createUser);
         UserDetails cUserDetails = HibernateTestUtil.createUserDetails();
@@ -69,7 +69,7 @@ class UserDetailsIT {
     }
 
     @Test
-    public void readUserDetailsTest(){
+    public void readUserDetailsTest() {
         session.evict(rudUserDetails);
         Optional<UserDetails> maybeUser = repository.findById(rudUserDetails.getId());
 
@@ -78,7 +78,7 @@ class UserDetailsIT {
     }
 
     @Test
-    public void updateUserDetailsTest(){
+    public void updateUserDetailsTest() {
         rudUserDetails.setPhone("+79111501823");
         repository.update(rudUserDetails);
         session.flush();
@@ -89,7 +89,7 @@ class UserDetailsIT {
     }
 
     @Test
-    public void deleteUserDetailsTest(){
+    public void deleteUserDetailsTest() {
         user.setUserDetails(null);
         repository.delete(rudUserDetails);
         UserDetails actualUserDetails = session.get(UserDetails.class, rudUserDetails.getId());
@@ -98,7 +98,7 @@ class UserDetailsIT {
     }
 
     @Test
-    void findAllTest(){
+    void findAllTest() {
         List<UserDetails> results = repository.findAll();
         assertThat(results).hasSize(4);
 
@@ -107,7 +107,7 @@ class UserDetailsIT {
     }
 
     @AfterEach
-    void closeSessions(){
+    void closeSessions() {
         session.getTransaction().rollback();
     }
 }

@@ -32,18 +32,18 @@ class BookIT {
     private static List<BaseEntity> data;
 
     @BeforeAll
-    public static void initialization(){
+    public static void initialization() {
         sessionFactory = HibernateTestUtil.buildSessionFactory();
         data = TestDataImporter.importData(sessionFactory);
     }
 
     @AfterAll
-    public static void finish(){
+    public static void finish() {
         sessionFactory.close();
     }
 
     @BeforeEach
-    public void prepareBookTable(){
+    public void prepareBookTable() {
         session = sessionFactory.getCurrentSession();
         repository = new BookRepository(session);
         Author author = HibernateTestUtil.createAuthorToReadUpdateDelete();
@@ -55,7 +55,7 @@ class BookIT {
     }
 
     @Test
-    public void createBookTest(){
+    public void createBookTest() {
         Author author = HibernateTestUtil.createAuthorToInsert();
         Book book = HibernateTestUtil.createBook(author);
 
@@ -66,7 +66,7 @@ class BookIT {
     }
 
     @Test
-    public void readBookTest(){
+    public void readBookTest() {
         session.evict(book);
         Optional<Book> maybeBook = repository.findById(book.getId());
 
@@ -75,7 +75,7 @@ class BookIT {
     }
 
     @Test
-    public void updateBookTest(){
+    public void updateBookTest() {
         book.setName("bookAlreadyUpdated");
         repository.update(book);
         session.flush();
@@ -86,7 +86,7 @@ class BookIT {
     }
 
     @Test
-    public void deleteAuthorTest(){
+    public void deleteAuthorTest() {
         repository.delete(book);
         Book actualBook = session.get(Book.class, book.getId());
 

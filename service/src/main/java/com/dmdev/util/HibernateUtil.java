@@ -17,6 +17,7 @@ import org.hibernate.cfg.Configuration;
 public class HibernateUtil {
 
     public static SessionFactory sessionFactory;
+
     public static SessionFactory buildSessionFactory() {
         Configuration configuration = buildConfiguration();
         configuration.configure();

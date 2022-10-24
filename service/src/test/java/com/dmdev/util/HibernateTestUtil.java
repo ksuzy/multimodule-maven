@@ -26,6 +26,7 @@ public class HibernateTestUtil {
     public static SessionFactory sessionFactory;
 
     private static final PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:14");
+
     static {
         container.start();
     }

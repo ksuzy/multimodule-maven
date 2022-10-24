@@ -15,7 +15,7 @@ public class OrderProductRepository extends BaseRepository<Long, OrderProduct> {
         super(QOrderProduct.orderProduct, OrderProduct.class, entityManager);
     }
 
-    public void deleteAllByOrders(List<Order> orders){
+    public void deleteAllByOrders(List<Order> orders) {
         EntityManager entityManager = getEntityManager();
         JPAQueryFactory jpaQueryFactory = new JPAQueryFactory(entityManager);
 
@@ -27,7 +27,7 @@ public class OrderProductRepository extends BaseRepository<Long, OrderProduct> {
         entityManager.flush();
     }
 
-    public void deleteALlByOrder(Order order){
+    public void deleteALlByOrder(Order order) {
         EntityManager entityManager = getEntityManager();
         JPAQueryFactory jpaQueryFactory = new JPAQueryFactory(entityManager);
 

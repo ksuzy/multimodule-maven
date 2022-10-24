@@ -68,6 +68,6 @@ public class User implements BaseEntity<Integer> {
     }
 
     public String fullName() {
-        return  this.userDetails.getFirstname() + " " + this.userDetails.getLastname();
+        return this.userDetails.getFirstname() + " " + this.userDetails.getLastname();
     }
 }
