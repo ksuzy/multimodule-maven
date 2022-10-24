@@ -1,6 +1,6 @@
-package com.dmdev.dao.querydsl;
+package com.dmdev.integration.filter.querydsl;
 
-import com.dmdev.dao.QPredicate;
+import com.dmdev.dao.predicates.QPredicate;
 import com.dmdev.dto.UserFilter;
 import com.dmdev.entity.QUser;
 import com.dmdev.entity.User;
@@ -41,11 +41,11 @@ public class UserIT {
     public void prepareUserTable() {
         session = sessionFactory.openSession();
         session.beginTransaction();
-        session.getTransaction().commit();
     }
 
     @AfterEach
     public void closeSessions() {
+        session.getTransaction().rollback();
         session.close();
     }
 
@@ -71,6 +71,7 @@ public class UserIT {
         assertThat(fullNames).containsExactlyInAnyOrder("Bill Gates");
     }
 
+
     private List<User> findAll(Session session) {
         var entityGraph = session.createEntityGraph(User.class);
         entityGraph.addAttributeNodes("userDetails", "userAddress");
@@ -81,6 +82,7 @@ public class UserIT {
                 .setHint(GraphSemantic.LOAD.getJpaHintName(), entityGraph)
                 .fetch();
     }
+
 
     private List<User> findAllByFirstname(Session session, UserFilter filter) {
         var entityGraph = session.createEntityGraph(User.class);

@@ -1,8 +1,11 @@
-package com.dmdev.crud;
+package com.dmdev.integration;
 
+import com.dmdev.dao.repositories.UserAddressRepository;
+import com.dmdev.entity.BaseEntity;
 import com.dmdev.entity.User;
 import com.dmdev.entity.UserAddress;
 import com.dmdev.util.HibernateTestUtil;
+import com.dmdev.util.TestDataImporter;
 import org.hibernate.Session;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -10,8 +13,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+import java.util.Optional;
+
 import static com.dmdev.util.HibernateTestUtil.sessionFactory;
+import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 class UserAddressIT {
@@ -19,10 +28,13 @@ class UserAddressIT {
     private User user;
     private UserAddress rudUserAddress;
     private Session session;
+    private UserAddressRepository repository;
+    private static List<BaseEntity> data;
 
     @BeforeAll
     public static void initialization(){
         sessionFactory = HibernateTestUtil.buildSessionFactory();
+        data = TestDataImporter.importData(sessionFactory);
     }
 
     @AfterAll
@@ -32,32 +44,28 @@ class UserAddressIT {
 
     @BeforeEach
     public void prepareUserAddressTable(){
-        session = sessionFactory.openSession();
+        session = sessionFactory.getCurrentSession();
+        repository = new UserAddressRepository(session);
         user = HibernateTestUtil.createUserToReadUpdateDelete();
         session.beginTransaction();
         session.save(user);
         rudUserAddress = HibernateTestUtil.createUserAddress();
         user.addUserAddress(rudUserAddress);
         session.save(rudUserAddress);
-        session.getTransaction().commit();
-    }
+        session.flush();    }
 
     @Test
     public void createUserAddressTest(){
         User createUser = HibernateTestUtil.createUserToInsert();
 
-        session.beginTransaction();
         session.save(createUser);
-        session.getTransaction().commit();
 
         UserAddress cUserAddress = HibernateTestUtil.createUserAddress();
         createUser.addUserAddress(cUserAddress);
 
-        session.beginTransaction();
-        session.save(cUserAddress);
+        repository.save(cUserAddress);
         session.flush();
         session.evict(cUserAddress);
-        session.flush();
         UserAddress actualUserAddress = session.get(UserAddress.class, cUserAddress.getId());
 
         assertEquals(cUserAddress, actualUserAddress);
@@ -65,21 +73,19 @@ class UserAddressIT {
 
     @Test
     public void readUserAddressTest(){
-        session.beginTransaction();
-        user.setUserAddress(null);
         session.evict(rudUserAddress);
-        UserAddress actualUserAddress = session.get(UserAddress.class, rudUserAddress.getId());
+        Optional<UserAddress> actualUserAddress = repository.findById(rudUserAddress.getId());
 
-        assertEquals(rudUserAddress, actualUserAddress);
+        assertFalse(actualUserAddress.isEmpty());
+        assertEquals(rudUserAddress, actualUserAddress.get());
     }
 
     @Test
     public void updateUserAddressTest(){
-        session.beginTransaction();
         rudUserAddress.setRegion("Guadeloupe");
-        session.update(rudUserAddress);
-        session.evict(rudUserAddress);
+        repository.update(rudUserAddress);
         session.flush();
+        session.evict(rudUserAddress);
         UserAddress actualUserAddress = session.get(UserAddress.class, rudUserAddress.getId());
 
         assertEquals(rudUserAddress, actualUserAddress);
@@ -87,17 +93,24 @@ class UserAddressIT {
 
     @Test
     public void deleteUserAddressTest(){
-        session.beginTransaction();
         user.setUserAddress(null);
-        session.delete(rudUserAddress);
+        repository.delete(rudUserAddress);
         UserAddress actualUserAddress = session.get(UserAddress.class, rudUserAddress.getId());
-        session.getTransaction().commit();
 
         assertNull(actualUserAddress);
     }
 
+    @Test
+    void findAllTest(){
+        List<UserAddress> results = repository.findAll();
+        assertThat(results).hasSize(4);
+
+        List<String> fullNames = results.stream().map(UserAddress::getHouse).collect(toList());
+        assertThat(fullNames).containsExactlyInAnyOrder("14A", "15", "15K4", "14");
+    }
+
     @AfterEach
-    public void closeSessions(){
-        session.close();
+    void closeSessions(){
+        session.getTransaction().rollback();
     }
 }

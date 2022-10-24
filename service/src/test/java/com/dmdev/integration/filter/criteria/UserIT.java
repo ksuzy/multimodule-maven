@@ -1,6 +1,6 @@
-package com.dmdev.dao.criteria;
+package com.dmdev.integration.filter.criteria;
 
-import com.dmdev.dao.CriteriaPredicate;
+import com.dmdev.dao.predicates.CriteriaPredicate;
 import com.dmdev.dto.UserFilter;
 import com.dmdev.entity.User;
 import com.dmdev.entity.UserDetails_;
@@ -41,11 +41,11 @@ public class UserIT {
     public void prepareUserTable() {
         session = sessionFactory.openSession();
         session.beginTransaction();
-        session.getTransaction().commit();
     }
 
     @AfterEach
     public void closeSessions() {
+        session.getTransaction().rollback();
         session.close();
     }
 
@@ -71,6 +71,7 @@ public class UserIT {
         assertThat(fullNames).containsExactlyInAnyOrder("Bill Gates");
     }
 
+
     private List<User> findAll(Session session) {
         var entityGraph = session.createEntityGraph(User.class);
         entityGraph.addAttributeNodes("userDetails", "userAddress");
@@ -86,6 +87,7 @@ public class UserIT {
                 .setHint(GraphSemantic.LOAD.getJpaHintName(), entityGraph)
                 .list();
     }
+
 
     private List<User> findAllByFirstname(Session session, UserFilter filter) {
         var entityGraph = session.createEntityGraph(User.class);

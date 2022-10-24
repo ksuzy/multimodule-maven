@@ -1,4 +1,4 @@
-package com.dmdev.dao;
+package com.dmdev.dao.predicates;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;

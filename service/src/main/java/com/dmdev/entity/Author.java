@@ -23,11 +23,12 @@ import java.util.List;
 @EqualsAndHashCode(exclude = "books")
 @ToString(exclude = "books")
 @Entity
-public class Author {
+public class Author implements BaseEntity<Integer> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
     private String firstname;
     private String lastname;
     private String patronymic;
@@ -36,4 +37,8 @@ public class Author {
     @Builder.Default
     @ManyToMany(mappedBy = "authors", cascade = CascadeType.REMOVE)
     private List<Book> books = new ArrayList<>();
+
+    public String fullName() {
+        return this.getFirstname() + " " + this.getLastname();
+    }
 }

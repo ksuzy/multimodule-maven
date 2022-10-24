@@ -31,11 +31,11 @@ public class HibernateTestUtil {
     }
 
     public static SessionFactory buildSessionFactory() {
-        Configuration configuration = HibernateUtil.buildConfiguration();
-        configuration.setProperty("hibernate.connection.url", container.getJdbcUrl());
-        configuration.setProperty("hibernate.connection.username", container.getUsername());
-        configuration.setProperty("hibernate.connection.password", container.getPassword());
-        configuration.configure();
+        Configuration configuration = HibernateUtil.buildConfiguration()
+                .setProperty("hibernate.connection.url", container.getJdbcUrl())
+                .setProperty("hibernate.connection.username", container.getUsername())
+                .setProperty("hibernate.connection.password", container.getPassword())
+                .configure();
 
         return configuration.buildSessionFactory();
     }
@@ -62,7 +62,7 @@ public class HibernateTestUtil {
     }
 
     public static Book createBook(Author author) {
-        return createBook("Chipolino", (short) 1995, BigDecimal.valueOf(259.99), List.of(author));
+        return createBook("Chipolino", (short) 1998, BigDecimal.valueOf(259.99), List.of(author));
     }
 
     public static Book createBook(String name, Short issueYear, BigDecimal price, List<Author> authors) {
@@ -157,9 +157,6 @@ public class HibernateTestUtil {
 
     public static OrderProduct createOrderProduct() {
         int quantity = 5;
-        return OrderProduct.builder()
-                .quantity(quantity)
-                .totalPrice(BigDecimal.valueOf(259.99 * quantity))
-                .build();
+        return createOrderProduct(quantity, BigDecimal.valueOf(259.99));
     }
 }

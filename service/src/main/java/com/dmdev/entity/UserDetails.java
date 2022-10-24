@@ -21,7 +21,7 @@ import javax.persistence.OneToOne;
 @EqualsAndHashCode(exclude = "user")
 @ToString(exclude = "user")
 @Entity
-public class UserDetails {
+public class UserDetails implements BaseEntity<Integer> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,7 +29,6 @@ public class UserDetails {
 
     @OneToOne(fetch = FetchType.LAZY)
     private User user;
-
     private String firstname;
     private String lastname;
     private String patronymic;
