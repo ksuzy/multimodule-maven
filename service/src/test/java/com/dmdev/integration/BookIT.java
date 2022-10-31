@@ -1,9 +1,12 @@
 package com.dmdev.integration;
 
-import com.dmdev.dao.repositories.BookRepository;
-import com.dmdev.entity.Author;
-import com.dmdev.entity.BaseEntity;
-import com.dmdev.entity.Book;
+import com.dmdev.config.ApplicationTestConfiguration;
+import com.dmdev.database.dao.repositories.BookRepository;
+import com.dmdev.database.entity.Author;
+import com.dmdev.database.entity.BaseEntity;
+import com.dmdev.database.entity.Book;
+import com.dmdev.database.pool.ConnectionPool;
+import com.dmdev.exceptions.SpringContextCloseException;
 import com.dmdev.util.HibernateTestUtil;
 import com.dmdev.util.TestDataImporter;
 import org.hibernate.Session;
@@ -12,11 +15,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import javax.persistence.EntityManager;
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-import static com.dmdev.util.HibernateTestUtil.sessionFactory;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,32 +33,42 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 class BookIT {
 
+    private static ApplicationContext context;
+    private static List<BaseEntity> data;
     private Book book;
     private Session session;
     private BookRepository repository;
-    private static List<BaseEntity> data;
 
     @BeforeAll
     public static void initialization() {
-        sessionFactory = HibernateTestUtil.buildSessionFactory();
-        data = TestDataImporter.importData(sessionFactory);
+        context = new AnnotationConfigApplicationContext(ApplicationTestConfiguration.class);
+        data = TestDataImporter.importData(context.getBean(ConnectionPool.class).sessionFactory());
     }
 
     @AfterAll
     public static void finish() {
-        sessionFactory.close();
+        try {
+            ((Closeable) context).close();
+        } catch (IOException e) {
+            throw new SpringContextCloseException(e);
+        }
     }
 
     @BeforeEach
     public void prepareBookTable() {
-        session = sessionFactory.getCurrentSession();
-        repository = new BookRepository(session);
+        session = (Session) context.getBean(EntityManager.class);
+        repository = context.getBean(BookRepository.class);
         Author author = HibernateTestUtil.createAuthorToReadUpdateDelete();
         book = HibernateTestUtil.createBook(author);
         session.beginTransaction();
         session.save(author);
         session.save(book);
         session.flush();
+    }
+
+    @AfterEach
+    void afterTests() {
+        session.getTransaction().rollback();
     }
 
     @Test
@@ -122,7 +139,7 @@ class BookIT {
                 .findFirst();
         assertFalse(authorForFind.isEmpty());
 
-        List<Book> results = repository.findAllByAuthor(authorForFind.get());
+        List<Book> results = repository.findAllByAuthorId(authorForFind.get().getId());
 
         assertThat(results).hasSize(authorForFind.get().getBooks().size());
     }
@@ -133,10 +150,5 @@ class BookIT {
 
         assertThat(results).contains(book);
         assertThat(results).hasSize(2);
-    }
-
-    @AfterEach
-    void closeSessions() {
-        session.getTransaction().rollback();
     }
 }

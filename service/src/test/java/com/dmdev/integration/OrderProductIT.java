@@ -1,12 +1,15 @@
 package com.dmdev.integration;
 
-import com.dmdev.dao.repositories.OrderProductRepository;
-import com.dmdev.entity.Author;
-import com.dmdev.entity.BaseEntity;
-import com.dmdev.entity.Book;
-import com.dmdev.entity.Order;
-import com.dmdev.entity.OrderProduct;
-import com.dmdev.entity.User;
+import com.dmdev.config.ApplicationTestConfiguration;
+import com.dmdev.database.dao.repositories.OrderProductRepository;
+import com.dmdev.database.entity.Author;
+import com.dmdev.database.entity.BaseEntity;
+import com.dmdev.database.entity.Book;
+import com.dmdev.database.entity.Order;
+import com.dmdev.database.entity.OrderProduct;
+import com.dmdev.database.entity.User;
+import com.dmdev.database.pool.ConnectionPool;
+import com.dmdev.exceptions.SpringContextCloseException;
 import com.dmdev.util.HibernateTestUtil;
 import com.dmdev.util.TestDataImporter;
 import org.hibernate.Session;
@@ -15,13 +18,17 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import javax.persistence.EntityManager;
+import java.io.Closeable;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.dmdev.util.HibernateTestUtil.sessionFactory;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,28 +37,34 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class OrderProductIT {
+
+    private static List<BaseEntity> data;
+    private static ApplicationContext context;
     private Order order;
     private Book book;
     private OrderProduct orderProduct;
     private Session session;
     private OrderProductRepository repository;
-    private static List<BaseEntity> data;
 
     @BeforeAll
     public static void initialization() {
-        sessionFactory = HibernateTestUtil.buildSessionFactory();
-        data = TestDataImporter.importData(sessionFactory);
+        context = new AnnotationConfigApplicationContext(ApplicationTestConfiguration.class);
+        data = TestDataImporter.importData(context.getBean(ConnectionPool.class).sessionFactory());
     }
 
     @AfterAll
     public static void finish() {
-        sessionFactory.close();
+        try {
+            ((Closeable) context).close();
+        } catch (IOException e) {
+            throw new SpringContextCloseException(e);
+        }
     }
 
     @BeforeEach
     public void prepareOrderProductTable() {
-        session = sessionFactory.openSession();
-        repository = new OrderProductRepository(session);
+        session = (Session) context.getBean(EntityManager.class);
+        repository = context.getBean(OrderProductRepository.class);
         User user = HibernateTestUtil.createUserToReadUpdateDelete();
         order = HibernateTestUtil.createOrder();
         user.addOrder(order);
@@ -67,6 +80,11 @@ public class OrderProductIT {
         session.save(book);
         session.save(orderProduct);
         session.flush();
+    }
+
+    @AfterEach
+    void afterTests() {
+        session.getTransaction().rollback();
     }
 
     @Test
@@ -136,10 +154,5 @@ public class OrderProductIT {
         repository.deleteAllByOrders(orders);
 
         assertThat(expectedOrderProducts).containsAll(repository.findAll());
-    }
-
-    @AfterEach
-    void closeSessions() {
-        session.getTransaction().rollback();
     }
 }

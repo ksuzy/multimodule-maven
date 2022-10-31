@@ -1,10 +1,12 @@
 package com.dmdev.integration.filter.querydsl;
 
-import com.dmdev.dao.predicates.QPredicate;
+import com.dmdev.config.ApplicationTestConfiguration;
+import com.dmdev.database.dao.predicates.QPredicate;
+import com.dmdev.database.pool.ConnectionPool;
 import com.dmdev.dto.UserFilter;
-import com.dmdev.entity.QUser;
-import com.dmdev.entity.User;
-import com.dmdev.util.HibernateTestUtil;
+import com.dmdev.database.entity.QUser;
+import com.dmdev.database.entity.User;
+import com.dmdev.exceptions.SpringContextCloseException;
 import com.dmdev.util.TestDataImporter;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -15,38 +17,46 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import javax.persistence.EntityManager;
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.List;
 
-import static com.dmdev.util.HibernateTestUtil.sessionFactory;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class UserIT {
 
+    private static ApplicationContext context;
     private Session session;
 
     @BeforeAll
     public static void initialization() {
-        sessionFactory = HibernateTestUtil.buildSessionFactory();
-        TestDataImporter.importData(sessionFactory);
+        context = new AnnotationConfigApplicationContext(ApplicationTestConfiguration.class);
+        TestDataImporter.importData(context.getBean(ConnectionPool.class).sessionFactory());
     }
 
     @AfterAll
     public static void finish() {
-        sessionFactory.close();
+        try {
+            ((Closeable) context).close();
+        } catch (IOException e) {
+            throw new SpringContextCloseException(e);
+        }
     }
 
     @BeforeEach
     public void prepareUserTable() {
-        session = sessionFactory.openSession();
+        session = (Session) context.getBean(EntityManager.class);
         session.beginTransaction();
     }
 
     @AfterEach
     public void closeSessions() {
         session.getTransaction().rollback();
-        session.close();
     }
 
     @Test
@@ -79,7 +89,7 @@ public class UserIT {
         return new JPAQuery<User>(session)
                 .select(QUser.user)
                 .from(QUser.user)
-                .setHint(GraphSemantic.LOAD.getJpaHintName(), entityGraph)
+                .setHint(GraphSemantic.FETCH.getJpaHintName(), entityGraph)
                 .fetch();
     }
 
@@ -96,7 +106,7 @@ public class UserIT {
                 .select(QUser.user)
                 .from(QUser.user)
                 .where(predicate)
-                .setHint(GraphSemantic.LOAD.getJpaHintName(), entityGraph)
+                .setHint(GraphSemantic.FETCH.getJpaHintName(), entityGraph)
                 .fetch();
     }
 }

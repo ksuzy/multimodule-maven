@@ -1,8 +1,11 @@
 package com.dmdev.integration;
 
-import com.dmdev.dao.repositories.AuthorRepository;
-import com.dmdev.entity.Author;
-import com.dmdev.entity.BaseEntity;
+import com.dmdev.config.ApplicationTestConfiguration;
+import com.dmdev.database.dao.repositories.AuthorRepository;
+import com.dmdev.database.entity.Author;
+import com.dmdev.database.entity.BaseEntity;
+import com.dmdev.database.pool.ConnectionPool;
+import com.dmdev.exceptions.SpringContextCloseException;
 import com.dmdev.util.HibernateTestUtil;
 import com.dmdev.util.TestDataImporter;
 import org.hibernate.Session;
@@ -11,11 +14,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import javax.persistence.EntityManager;
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-import static com.dmdev.util.HibernateTestUtil.sessionFactory;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,21 +32,32 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 class AuthorIT {
 
+    private static ApplicationContext context;
+
     private Author rudAuthor;
     private Session session;
     private AuthorRepository repository;
-    private static List<BaseEntity> data;
+
 
     @BeforeAll
     public static void initialization() {
-        sessionFactory = HibernateTestUtil.buildSessionFactory();
-        data = TestDataImporter.importData(sessionFactory);
+        context = new AnnotationConfigApplicationContext(ApplicationTestConfiguration.class);
+        TestDataImporter.importData(context.getBean(ConnectionPool.class).sessionFactory());
+    }
+
+    @AfterAll
+    static void finish() {
+        try {
+            ((Closeable) context).close();
+        } catch (IOException e) {
+            throw new SpringContextCloseException(e);
+        }
     }
 
     @BeforeEach
     public void prepareAuthorTable() {
-        session = sessionFactory.openSession();
-        repository = new AuthorRepository(session);
+        session = (Session) context.getBean(EntityManager.class);
+        repository = context.getBean(AuthorRepository.class);
         rudAuthor = HibernateTestUtil.createAuthorToReadUpdateDelete();
         session.beginTransaction();
         session.save(rudAuthor);
@@ -47,14 +65,10 @@ class AuthorIT {
     }
 
     @AfterEach
-    void closeSessions() {
+    void afterTests() {
         session.getTransaction().rollback();
     }
 
-    @AfterAll
-    static void finish() {
-        sessionFactory.close();
-    }
 
     @Test
     public void createAuthorTest() {

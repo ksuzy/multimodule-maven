@@ -1,15 +1,14 @@
 package com.dmdev.util;
 
-import com.dmdev.entity.Author;
-import com.dmdev.entity.BaseEntity;
-import com.dmdev.entity.Book;
-import com.dmdev.entity.Order;
-import com.dmdev.entity.OrderProduct;
-import com.dmdev.entity.User;
-import com.dmdev.entity.UserAddress;
-import com.dmdev.entity.UserDetails;
-import com.dmdev.entity.fields.Role;
-import lombok.Cleanup;
+import com.dmdev.database.entity.Author;
+import com.dmdev.database.entity.BaseEntity;
+import com.dmdev.database.entity.Book;
+import com.dmdev.database.entity.Order;
+import com.dmdev.database.entity.OrderProduct;
+import com.dmdev.database.entity.User;
+import com.dmdev.database.entity.UserAddress;
+import com.dmdev.database.entity.UserDetails;
+import com.dmdev.database.entity.fields.Role;
 import lombok.experimental.UtilityClass;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -22,7 +21,7 @@ import java.util.List;
 public class TestDataImporter {
 
     public List<BaseEntity> importData(SessionFactory sessionFactory) {
-        @Cleanup Session session = sessionFactory.openSession();
+        Session session = sessionFactory.getCurrentSession();
         List<BaseEntity> result = new ArrayList<>();
 
         session.beginTransaction();

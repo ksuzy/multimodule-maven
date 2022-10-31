@@ -1,9 +1,10 @@
 package com.dmdev.integration;
 
-import com.dmdev.dao.repositories.UserRepository;
-import com.dmdev.dto.UserFilter;
-import com.dmdev.entity.BaseEntity;
-import com.dmdev.entity.User;
+import com.dmdev.config.ApplicationTestConfiguration;
+import com.dmdev.database.dao.repositories.UserRepository;
+import com.dmdev.database.pool.ConnectionPool;
+import com.dmdev.database.entity.User;
+import com.dmdev.exceptions.SpringContextCloseException;
 import com.dmdev.util.HibernateTestUtil;
 import com.dmdev.util.TestDataImporter;
 import org.hibernate.Session;
@@ -12,11 +13,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import javax.persistence.EntityManager;
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-import static com.dmdev.util.HibernateTestUtil.sessionFactory;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,31 +31,40 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 class UserIT {
 
+    private static ApplicationContext context;
     private User rudUser;
     private Session session;
     private UserRepository repository;
-    private static List<BaseEntity> data;
 
     @BeforeAll
     public static void initialization() {
-        sessionFactory = HibernateTestUtil.buildSessionFactory();
-        data = TestDataImporter.importData(sessionFactory);
+        context = new AnnotationConfigApplicationContext(ApplicationTestConfiguration.class);
+        TestDataImporter.importData(context.getBean(ConnectionPool.class).sessionFactory());
     }
 
     @AfterAll
     public static void finish() {
-        sessionFactory.close();
+        try {
+            ((Closeable) context).close();
+        } catch (IOException e) {
+            throw new SpringContextCloseException(e);
+        }
     }
 
     @BeforeEach
     public void prepareUserTable() {
-        session = sessionFactory.getCurrentSession();
-        repository = new UserRepository(session);
+        session = (Session) context.getBean(EntityManager.class);
+        repository = context.getBean(UserRepository.class);
         rudUser = HibernateTestUtil.createUserToReadUpdateDelete();
         session.beginTransaction();
         session.save(rudUser);
         session.flush();
         rudUser.addUserDetails(HibernateTestUtil.createUserDetails("Ivan", "Ivanov"));
+    }
+
+    @AfterEach
+    void afterTests() {
+        session.getTransaction().rollback();
     }
 
     @Test
@@ -110,19 +124,10 @@ class UserIT {
 
     @Test
     void findAllByFirstnameTest() {
-        UserFilter filter = UserFilter.builder()
-                .firstname("Bill")
-                .build();
-
-        List<User> results = repository.findAllByFirstname(filter);
+        List<User> results = repository.findAllByFirstname("Bill");
         assertThat(results).hasSize(1);
 
         List<String> fullNames = results.stream().map(User::fullName).collect(toList());
         assertThat(fullNames).containsExactlyInAnyOrder("Bill Gates");
-    }
-
-    @AfterEach
-    void rollbackTransaction() {
-        session.getTransaction().rollback();
     }
 }

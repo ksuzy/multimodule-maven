@@ -1,12 +1,12 @@
 package com.dmdev.util;
 
-import com.dmdev.entity.Author;
-import com.dmdev.entity.Book;
-import com.dmdev.entity.Order;
-import com.dmdev.entity.OrderProduct;
-import com.dmdev.entity.User;
-import com.dmdev.entity.UserAddress;
-import com.dmdev.entity.UserDetails;
+import com.dmdev.database.entity.Author;
+import com.dmdev.database.entity.Book;
+import com.dmdev.database.entity.Order;
+import com.dmdev.database.entity.OrderProduct;
+import com.dmdev.database.entity.User;
+import com.dmdev.database.entity.UserAddress;
+import com.dmdev.database.entity.UserDetails;
 
 import lombok.experimental.UtilityClass;
 import org.hibernate.SessionFactory;
@@ -15,8 +15,6 @@ import org.hibernate.cfg.Configuration;
 
 @UtilityClass
 public class HibernateUtil {
-
-    public static SessionFactory sessionFactory;
 
     public static SessionFactory buildSessionFactory() {
         Configuration configuration = buildConfiguration();

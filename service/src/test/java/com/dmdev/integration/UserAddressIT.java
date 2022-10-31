@@ -1,9 +1,12 @@
 package com.dmdev.integration;
 
-import com.dmdev.dao.repositories.UserAddressRepository;
-import com.dmdev.entity.BaseEntity;
-import com.dmdev.entity.User;
-import com.dmdev.entity.UserAddress;
+import com.dmdev.config.ApplicationTestConfiguration;
+import com.dmdev.database.dao.repositories.UserAddressRepository;
+import com.dmdev.database.entity.BaseEntity;
+import com.dmdev.database.entity.User;
+import com.dmdev.database.entity.UserAddress;
+import com.dmdev.database.pool.ConnectionPool;
+import com.dmdev.exceptions.SpringContextCloseException;
 import com.dmdev.util.HibernateTestUtil;
 import com.dmdev.util.TestDataImporter;
 import org.hibernate.Session;
@@ -12,11 +15,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import javax.persistence.EntityManager;
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-import static com.dmdev.util.HibernateTestUtil.sessionFactory;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,27 +32,31 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 class UserAddressIT {
 
+    private static ApplicationContext context;
     private User user;
     private UserAddress rudUserAddress;
     private Session session;
     private UserAddressRepository repository;
-    private static List<BaseEntity> data;
 
     @BeforeAll
     public static void initialization() {
-        sessionFactory = HibernateTestUtil.buildSessionFactory();
-        data = TestDataImporter.importData(sessionFactory);
+        context = new AnnotationConfigApplicationContext(ApplicationTestConfiguration.class);
+        TestDataImporter.importData(context.getBean(ConnectionPool.class).sessionFactory());
     }
 
     @AfterAll
     public static void finish() {
-        sessionFactory.close();
+        try {
+            ((Closeable) context).close();
+        } catch (IOException e) {
+            throw new SpringContextCloseException(e);
+        }
     }
 
     @BeforeEach
     public void prepareUserAddressTable() {
-        session = sessionFactory.getCurrentSession();
-        repository = new UserAddressRepository(session);
+        session = (Session) context.getBean(EntityManager.class);
+        repository = context.getBean(UserAddressRepository.class);
         user = HibernateTestUtil.createUserToReadUpdateDelete();
         session.beginTransaction();
         session.save(user);
@@ -53,6 +64,12 @@ class UserAddressIT {
         user.addUserAddress(rudUserAddress);
         session.save(rudUserAddress);
         session.flush();
+    }
+
+
+    @AfterEach
+    void afterTests() {
+        session.getTransaction().rollback();
     }
 
     @Test
@@ -108,10 +125,5 @@ class UserAddressIT {
 
         List<String> fullNames = results.stream().map(UserAddress::getHouse).collect(toList());
         assertThat(fullNames).containsExactlyInAnyOrder("14A", "15", "15K4", "14");
-    }
-
-    @AfterEach
-    void closeSessions() {
-        session.getTransaction().rollback();
     }
 }

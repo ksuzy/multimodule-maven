@@ -1,6 +1,6 @@
 package com.dmdev.dto;
 
-import com.dmdev.entity.fields.Role;
+import com.dmdev.database.entity.fields.Role;
 import lombok.Builder;
 import lombok.Value;
 
